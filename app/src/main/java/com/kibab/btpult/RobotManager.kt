@@ -4,16 +4,16 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothSocket
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SeekBar
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.fragment_robot_manager.*
 import kotlinx.coroutines.*
 import java.io.IOException
-import java.util.*
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -41,6 +41,14 @@ class RobotManager : Fragment(), CoroutineScope by MainScope() {
         }
     }
 
+    override fun onDestroy() {
+        if (this.btSocket != null && this.btSocket!!.isConnected) {
+            this.btSocket!!.close()
+        }
+        super.onDestroy()
+        cancel()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -49,85 +57,111 @@ class RobotManager : Fragment(), CoroutineScope by MainScope() {
         return inflater.inflate(R.layout.fragment_robot_manager, container, false)
     }
 
-    @ExperimentalStdlibApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         deviceAddr.text = args.deviceAddress
 
-        pingButton.setEnabled(this.btSocket != null)
-        readData.setEnabled(this.btSocket != null)
-        connectDevice.setEnabled(this.btSocket == null)
-
-        connectDevice.setOnClickListener{connectToDevice()}
-        pingButton.setOnClickListener{
-            if (this.btSocket == null)
-                return@setOnClickListener
-            try {
-                this.btSocket!!.outputStream.write("ping\n".toByteArray())
-            } catch (e:IOException) {
-                Snackbar.make(view!!, "ping failed: " + e.localizedMessage, 3).show()
-            }
-        }
-
-        readData.setOnClickListener {
-            launch {
-                readDataWrapper()
-            }
-        }
-
-    }
-
-    @ExperimentalStdlibApi
-    suspend private fun readDataWrapper() {
-        while (this.btSocket != null) {
-            withContext(Dispatchers.IO) {
-                readData()
-            }
-        }
-    }
-
-    @ExperimentalStdlibApi
-    suspend private fun readData() {
-        if (this.btSocket == null)
-            return
-        try {
-            var data:ByteArray = ByteArray(512)
-            do {
-                Log.i("RobotManager.readData", "About to call InputStream.read()")
-                val bytesRead = this.btSocket!!.inputStream.read(data)
-                withContext(Dispatchers.Main) {
-                    deviceLog.append(data.decodeToString(0, bytesRead))
+        connectDevice.setOnClickListener { connectToDevice() }
+        speedSelector.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
+                Log.i("RobotManager", "Set speed to: $i")
+                launch {
+                    withContext(Dispatchers.IO) {
+                        Mgr?.SetSpeed(i)
+                    }
                 }
-                data.fill(0)
-            } while (bytesRead > 0 && this.btSocket!!.inputStream.available() > 0)
-            Log.i("RobotManager.readData", "Done reading out")
-        } catch (e:IOException) {
-            withContext(Dispatchers.Main) {
-                Snackbar.make(view!!, "Stream read error: " + e.localizedMessage, 3).show()
             }
-            return
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
+        pingButton.setOnClickListener {
+            try {
+                Mgr?.SendPing()
+            } catch (e: IOException) {
+                Snackbar.make(view, "ping failed: " + e.localizedMessage, 3).show()
+            }
+        }
+
+        bt_fwd.setOnClickListener {
+            SendMovement('F')
+        }
+        bt_rev.setOnClickListener {
+            SendMovement('B')
+        }
+        bt_left.setOnClickListener {
+            SendMovement('L')
+        }
+        bt_right.setOnClickListener {
+            SendMovement('R')
+        }
+
+        refreshButtons()
+    }
+
+    private fun refreshButtons() {
+        val enable = Mgr?.IsConnected() ?: false
+        bt_fwd.isEnabled = enable
+        bt_rev.isEnabled = enable
+        bt_left.isEnabled = enable
+        bt_right.isEnabled = enable
+        pingButton.isEnabled = enable
+    }
+
+    private fun SendMovement(move: Char) {
+        launch {
+            withContext(Dispatchers.IO) {
+                when (move) {
+                    'F' -> Mgr?.MoveForward()
+                    'B' -> Mgr?.MoveBackWard()
+                    'L' -> Mgr?.TurnLeft()
+                    'R' -> Mgr?.TurnRight()
+                    else -> throw IllegalArgumentException("Unexpected move '$move'")
+                }
+            }
+        }
+    }
+
+    private suspend fun readDataWrapper() {
+        withContext(Dispatchers.IO) {
+            readData()
+        }
+    }
+
+    private suspend fun readData() {
+        while (Mgr!!.IsConnected()) {
+            val logString = Mgr?.GetDeviceLog()
+            withContext(Dispatchers.Main) {
+                deviceLog.append(logString)
+            }
         }
     }
 
     private fun connectToDevice() {
-        if (this.btSocket != null)
-            return
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: return
         val bluetoothDevice = bluetoothAdapter.getRemoteDevice(args.deviceAddress)
 
-        // Well-known SDP address: https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createRfcommSocketToServiceRecord(java.util.UUID)
-        val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-        this.btSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid) ?: return
-        try {
-            Log.i("RobotManager", "Connecting")
-            this.btSocket!!.connect()
-        } catch (e: IOException) {
-            Snackbar.make(view!!, "Connection failed: " + e.localizedMessage, 3).show()
+        if (Mgr != null)
             return
+        Mgr = KibabRobotManager(bluetoothDevice)
+        Log.i("RobotManager", "Connecting")
+        launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    Mgr?.Connect()
+                }
+            } catch (e: IOException) {
+                Snackbar.make(
+                    view!!,
+                    "Connection failed: " + e.localizedMessage,
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+            Log.i("RobotManager", "Connection successful")
+            refreshButtons()
+            if (Mgr!!.IsConnected())
+                readDataWrapper()
         }
-        Log.i("RobotManager", "Connection successful")
-        pingButton.setEnabled(true)
-        readData.setEnabled(true)
     }
 
     companion object {

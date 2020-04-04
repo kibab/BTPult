@@ -12,4 +12,9 @@
     <string name="target_device">Target device:</string>
     <string name="connect">Connect</string>
     <string name="send_ping">Send ping</string>
+    <string name="log_from_the_device">Log from the device</string>
+    <string name="forward">Forward</string>
+    <string name="reverse">Reverse</string>
+    <string name="left">Left</string>
+    <string name="right">Right</string>
 </resources>

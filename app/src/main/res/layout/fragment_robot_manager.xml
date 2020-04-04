@@ -6,27 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".DeviceSelector">
 
-    <TextView
-        android:id="@+id/deviceLog"
-        android:layout_width="362dp"
-        android:layout_height="195dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:background="#F3F1F1"
-        android:textColor="#000000"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.47"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/labelConnectedTo" />
-
     <Button
         android:id="@+id/pingButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="16dp"
-        android:enabled="false"
+        android:layout_marginTop="24dp"
         android:text="@string/send_ping"
         app:layout_constraintStart_toEndOf="@+id/connectDevice"
         app:layout_constraintTop_toBottomOf="@+id/deviceLog" />
@@ -57,19 +42,80 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:text="@string/connect"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceLog" />
 
+    <EditText
+        android:id="@+id/deviceLog"
+        android:layout_width="360dp"
+        android:layout_height="201dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:backgroundTint="#EAE3E3"
+        android:contentDescription="@string/log_from_the_device"
+        android:cursorVisible="false"
+        android:editable="false"
+        android:ems="10"
+        android:fontFamily="monospace"
+        android:gravity="start|top"
+        android:inputType="textMultiLine|textNoSuggestions"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/labelConnectedTo" />
+
+    <SeekBar
+        android:id="@+id/speedSelector"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="357dp"
+        android:layout_height="42dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="16dp"
+        android:max="10"
+        android:progress="0"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pingButton" />
+
     <Button
-        android:id="@+id/readData"
+        android:id="@+id/bt_fwd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
         android:layout_marginTop="16dp"
-        android:enabled="false"
-        android:text="Read data"
-        app:layout_constraintStart_toEndOf="@+id/pingButton"
-        app:layout_constraintTop_toBottomOf="@+id/deviceLog" />
+        android:text="@string/forward"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/speedSelector" />
+
+    <Button
+        android:id="@+id/bt_rev"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/reverse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bt_right" />
+
+    <Button
+        android:id="@+id/bt_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:text="@string/left"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bt_fwd" />
+
+    <Button
+        android:id="@+id/bt_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:text="@string/right"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bt_fwd" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
