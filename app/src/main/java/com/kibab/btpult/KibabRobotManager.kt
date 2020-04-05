@@ -13,42 +13,56 @@ class KibabRobotManager(dev: BluetoothDevice) {
     private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private var btSocket: BluetoothSocket = dev.createRfcommSocketToServiceRecord(uuid)
     private var input: Scanner? = null
+    private var isConnected: Boolean = false
 
     fun Connect() {
         Log.i("KibabRobotManager", "Connect() called")
-        if (!btSocket.isConnected)
-            btSocket.connect()
-        // Use space as alternate separator since `cu` swallows "\n"
-        // when connected to the Bluetooth module via serial port.
-        input = Scanner(btSocket.inputStream).useDelimiter("[ \n]")
+        if (!isConnected)
+            btSocket.connect() // This blocks until connection is successful, or throws an IOException
+        isConnected = true
+        input = Scanner(btSocket.inputStream).useDelimiter("\n")
     }
 
     fun IsConnected(): Boolean {
-        return btSocket.isConnected
+        return isConnected
     }
 
     fun GetDeviceLog(): String {
         Log.i("KibabRobotManager", "GetDeviceLog() called")
-        if (!this.btSocket.isConnected)
-            throw IOException("Socket is not yet connected")
+        if (!isConnected)
+            throw IOException("Socket is not connected")
         if (input!!.hasNext()) {
             val data = input!!.next()
             Log.i("KibabRobotManager", "Read $data")
             return data + "\n"
         }
+        /* If we got here it means that there is no more data in the stream
+        * and there won't be any - likely socket is closed.
+        * */
+        isConnected = false
         return ""
     }
 
     fun SendPing() {
-        if (!this.btSocket.isConnected)
+        if (!isConnected)
             throw IOException("Socket is not yet connected")
-        btSocket.outputStream.write("ping\n".toByteArray())
+        try {
+            btSocket.outputStream.write("P_\n".toByteArray())
+        } catch (e: IOException) {
+            isConnected = false
+            throw e /* Propagate to caller */
+        }
     }
 
     fun SetSpeed(speed: Int) {
-        if (!this.btSocket.isConnected)
+        if (!isConnected)
             throw IOException("Socket is not yet connected")
-        btSocket.outputStream.write("S$speed\n".toByteArray())
+        try {
+            btSocket.outputStream.write("S$speed\n".toByteArray())
+        } catch (e: IOException) {
+            isConnected = false
+            throw e /* Propagate to caller */
+        }
     }
 
     fun MoveForward() {
@@ -68,8 +82,13 @@ class KibabRobotManager(dev: BluetoothDevice) {
     }
 
     private fun Move(d: Char) {
-        if (!this.btSocket.isConnected)
+        if (!isConnected)
             throw IOException("Socket is not yet connected")
-        btSocket.outputStream.write("M$d\n".toByteArray())
+        try {
+            btSocket.outputStream.write("M$d\n".toByteArray())
+        } catch (e: IOException) {
+            isConnected = false
+            throw e /* Propagate to caller */
+        }
     }
 }

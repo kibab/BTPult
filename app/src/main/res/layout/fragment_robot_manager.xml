@@ -33,6 +33,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:fontFamily="monospace"
+        android:textColor="#FFFFFF"
         android:textStyle="bold"
         app:layout_constraintStart_toEndOf="@+id/labelConnectedTo"
         app:layout_constraintTop_toTopOf="parent" />
@@ -70,15 +71,15 @@
     <SeekBar
         android:id="@+id/speedSelector"
         style="@style/Widget.AppCompat.SeekBar.Discrete"
-        android:layout_width="357dp"
-        android:layout_height="42dp"
-        android:layout_marginStart="16dp"
+        android:layout_width="301dp"
+        android:layout_height="25dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="16dp"
-        android:max="10"
+        android:max="9"
         android:progress="0"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView"
         app:layout_constraintTop_toBottomOf="@+id/pingButton" />
 
     <Button
@@ -117,5 +118,15 @@
         android:text="@string/right"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bt_fwd" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="28dp"
+        android:text="Speed:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/connectDevice" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

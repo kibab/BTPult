@@ -2,6 +2,7 @@ package com.kibab.btpult
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothSocket
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -106,18 +107,35 @@ class RobotManager : Fragment(), CoroutineScope by MainScope() {
         bt_left.isEnabled = enable
         bt_right.isEnabled = enable
         pingButton.isEnabled = enable
+        speedSelector.isEnabled = enable
+        connectDevice.isEnabled = !enable
+
+        if (enable) {
+            deviceAddr.setTextColor(Color.GREEN)
+        } else {
+            deviceAddr.setTextColor(Color.RED)
+        }
     }
 
     private fun SendMovement(move: Char) {
         launch {
-            withContext(Dispatchers.IO) {
-                when (move) {
-                    'F' -> Mgr?.MoveForward()
-                    'B' -> Mgr?.MoveBackWard()
-                    'L' -> Mgr?.TurnLeft()
-                    'R' -> Mgr?.TurnRight()
-                    else -> throw IllegalArgumentException("Unexpected move '$move'")
+            try {
+                withContext(Dispatchers.IO) {
+                    when (move) {
+                        'F' -> Mgr?.MoveForward()
+                        'B' -> Mgr?.MoveBackWard()
+                        'L' -> Mgr?.TurnLeft()
+                        'R' -> Mgr?.TurnRight()
+                        else -> throw IllegalArgumentException("Unexpected move '$move'")
+                    }
                 }
+            } catch (e: IOException) {
+                Snackbar.make(
+                    view!!,
+                    "Send command failed: " + e.localizedMessage,
+                    Snackbar.LENGTH_LONG
+                ).show()
+                refreshButtons()
             }
         }
     }
@@ -126,6 +144,7 @@ class RobotManager : Fragment(), CoroutineScope by MainScope() {
         withContext(Dispatchers.IO) {
             readData()
         }
+        refreshButtons()
     }
 
     private suspend fun readData() {
@@ -141,9 +160,9 @@ class RobotManager : Fragment(), CoroutineScope by MainScope() {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: return
         val bluetoothDevice = bluetoothAdapter.getRemoteDevice(args.deviceAddress)
 
-        if (Mgr != null)
-            return
-        Mgr = KibabRobotManager(bluetoothDevice)
+        if (Mgr == null) {
+            Mgr = KibabRobotManager(bluetoothDevice)
+        }
         Log.i("RobotManager", "Connecting")
         launch {
             try {
